@@ -1,0 +1,19 @@
+{
+  "env": {
+    "node": true,
+    "es2021": true
+  },
+  "extends": [
+    "eslint:recommended"
+  ],
+  "parserOptions": {
+    "ecmaVersion": 12
+  },
+  "globals": {
+    "require": "readonly",
+    "module": "readonly"
+  },
+  "rules": {
+    // Add any additional rules here if you like
+  }
+}
