@@ -12,6 +12,8 @@ function App() {
   const [editingFolder, setEditingFolder] = useState(null);  // State for editing folders
   const [editedTaskName, setEditedTaskName] = useState("");  // State for edited task name
   const [editedFolderName, setEditedFolderName] = useState("");  // State for edited folder name
+  const [newTaskDescription, setNewTaskDescription] = useState("");
+  const [editedTaskDescription, setEditedTaskDescription] = useState("");
 
   const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -37,11 +39,19 @@ function App() {
     try {
       const res = await axios.post(`${apiUrl}/tasks`, {
         name: newTask,
-        description: "",
+        description: newTaskDescription.trim() || null,
         folder_id: selectedFolder || null,
       });
-      setTasks([...tasks, { id: res.data.id, name: newTask }]);
+
+      setTasks([...tasks, { 
+        id: res.data.id, 
+        name: res.data.name,
+        description: res.data.description,
+        folder_id: res.data.folder_id 
+      }]);
+
       setNewTask("");
+      setNewTaskDescription("");
     } catch (error) {
       console.error("Error adding task:", error);
     }
@@ -58,17 +68,27 @@ function App() {
     }
   };
 
-  const updateTask = async (taskId, updatedName) => {
+  const updateTask = async (taskId, updatedName, updatedDescription) => {
     try {
-      await axios.put(`${apiUrl}/tasks/${taskId}`, {
+      const res = await axios.put(`${apiUrl}/tasks/${taskId}`, {
         name: updatedName,
-        description: "",
+        description: updatedDescription?.trim() || null,
         folder_id: selectedFolder || null,
       });
 
-      setTasks(tasks.map(task => task.id === taskId ? { ...task, name: updatedName } : task));
+      setTasks(tasks.map(task => 
+        task.id === taskId 
+          ? { 
+              ...task, 
+              name: res.data.name,
+              description: res.data.description
+            } 
+          : task
+      ));
       // Clear editing state after saving
       setEditingTask(null); // Reset the editing task state
+      setEditedTaskName("");
+      setEditedTaskDescription("");
     } catch (error) {
       console.error("Error updating task:", error);
     }
@@ -111,6 +131,7 @@ function App() {
   const handleEditTask = (task) => {
     setEditingTask(task.id);
     setEditedTaskName(task.name);
+    setEditedTaskDescription(task.description || "");
   };
 
   // Handle editing folder
@@ -178,34 +199,46 @@ function App() {
               <li key={task.id}>
                 {/* Display task name or input field based on editing state */}
                 {editingTask === task.id ? (
-                  <input
-                    type="text"
-                    value={editedTaskName}
-                    onChange={(e) => setEditedTaskName(e.target.value)}
-                  />
+                  <div className="task-edit-form">
+                    <input
+                      type="text"
+                      value={editedTaskName}
+                      onChange={(e) => setEditedTaskName(e.target.value)}
+                    />
+                    <textarea
+                      value={editedTaskDescription}
+                      onChange={(e) => setEditedTaskDescription(e.target.value)}
+                      placeholder="Task description (optional)"
+                    />
+                    <button onClick={() => updateTask(task.id, editedTaskName, editedTaskDescription)}>
+                      Save
+                    </button>
+                  </div>
                 ) : (
-                  task.name
+                  <div className="task-display">
+                    <div className="task-name">{task.name}</div>
+                    {task.description && (
+                      <div className="task-description">{task.description}</div>
+                    )}
+                    <button onClick={() => handleEditTask(task)}>Edit</button>
+                    <button onClick={() => deleteTask(task.id)}>Delete</button>
+                  </div>
                 )}
-
-                {/* Show "Save" button if task is being edited, else show "Edit" button */}
-                {editingTask === task.id ? (
-                  <button onClick={() => updateTask(task.id, editedTaskName)}>Save</button>
-                ) : (
-                  <button onClick={() => handleEditTask(task)}>Edit</button>
-                )}
-
-                {/* Delete Button */}
-                <button onClick={() => deleteTask(task.id)}>Delete</button>
               </li>
             ))}
         </ul>
 
-        <div>
+        <div className="task-input-form">
           <input
             type="text"
             value={newTask}
             onChange={(e) => setNewTask(e.target.value)}
             placeholder="New task"
+          />
+          <textarea
+            value={newTaskDescription}
+            onChange={(e) => setNewTaskDescription(e.target.value)}
+            placeholder="Task description (optional)"
           />
           <button onClick={addTask}>Add Task</button>
         </div>
